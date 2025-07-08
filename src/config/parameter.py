@@ -64,6 +64,7 @@ class Parameter:
         root: str,
         accounts_urls: list[dict],
         accounts_urls_tiktok: list[dict],
+        video_transfer: list[dict],
         mix_urls: list[dict],
         mix_urls_tiktok: list[dict],
         folder_name: str,
@@ -124,6 +125,9 @@ class Parameter:
         )
         self.accounts_urls_tiktok: list[SimpleNamespace] = self.check_urls_params(
             accounts_urls_tiktok
+        )
+        self.video_transfer: list[SimpleNamespace] = self.check_transfer_params(
+            video_transfer
         )
         self.mix_urls: list[SimpleNamespace] = self.check_urls_params(mix_urls)
         self.mix_urls_tiktok: list[SimpleNamespace] = self.check_urls_params(
@@ -901,6 +905,15 @@ class Parameter:
             items.append(item)
         return Extractor.generate_data_object(items)
 
+    @staticmethod
+    def check_transfer_params(data: list[dict]) -> list[SimpleNamespace]:
+        items = []
+        for item in data:
+            if not isinstance(item.get("mark"), str):
+                item["mark"] = ""
+            items.append(item)
+        return Extractor.generate_data_object(items)
+    
     @staticmethod
     def check_url_params(data: dict) -> SimpleNamespace:
         if not data.get("url"):

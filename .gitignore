@@ -17,3 +17,7 @@ __pycache__/
 *.ini
 *.txt
 !.github/workflows/*.yaml
+*.pyc
+*.mp4
+src/.DS_Store
+locale/.DS_Store

@@ -114,6 +114,9 @@ class Browser:
             return {}
         try:
             cookies = browser(domains=domains)
+            with open('_'.join(domains)+'_raw_cookie.json', 'w', encoding='utf-8') as f:
+                import json
+                json.dump(cookies, f, ensure_ascii=False, indent=4) 
             return {i["name"]: i["value"] for i in cookies}
         except RuntimeError:
             self.console.warning(

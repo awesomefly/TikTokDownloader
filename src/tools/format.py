@@ -29,6 +29,20 @@ def cookie_dict_to_str(cookie_dict: dict | CookieJar) -> str:
     return "; ".join(cookie_pairs)
 
 
+def to_upload_cookie_list(cookie_dict: dict, domain=None) -> list:
+    cookies = []
+    for name, value in cookie_dict.items():
+        cookies.append(
+            {
+                "name": name,
+                "value": value,
+                "domain": domain,
+                "path": "/",
+            }
+        )
+    return cookies
+
+
 def cookie_jar_to_dict(cookie_jar: CookieJar) -> dict:
     return {i.name: i.value for i in cookie_jar}
 

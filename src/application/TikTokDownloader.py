@@ -287,13 +287,13 @@ class TikTokDownloader:
 
     async def complete(self):
         """终端交互模式"""
-        example = TikTok(
+        tk_instance = TikTok(
             self.parameter,
             self.database,
         )
         try:
-            await example.run(self.run_command)
-            self.running = example.running
+            await tk_instance.run(self.run_command)
+            self.running = tk_instance.running
         except KeyboardInterrupt:
             self.running = False
 
@@ -388,13 +388,16 @@ class TikTokDownloader:
             self.run_command = self.parameter.run_command.copy()
         self.parameter.CLEANER.set_rule(TEXT_REPLACEMENT, True)
 
-    async def run(self):
+    async def init(self):
         self.project_info()
         self.check_config()
         await self.check_settings(
             False,
         )
-        if await self.disclaimer():
+        return await self.disclaimer()
+
+    async def run(self):
+        if await self.init():
             await self.main_menu(safe_pop(self.run_command))
 
     def periodic_update_params(self):

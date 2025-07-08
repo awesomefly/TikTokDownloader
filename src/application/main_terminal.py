@@ -50,6 +50,9 @@ from ..storage import RecordManager
 from ..tools import DownloaderError, choose, safe_pop
 from ..translation import _
 
+from ..uploader.upload import upload_video, upload_videos
+from ..uploader.auth import AuthBackend
+
 if TYPE_CHECKING:
     from pydantic import BaseModel
 
@@ -198,6 +201,10 @@ class TikTok:
                 _("批量下载视频原画(TikTok)"),
                 self.detail_interactive_tiktok_unofficial,
             ),
+            (
+                _("批量发布视频作品(TikTok)"),
+                self.upload_video_tiktok,
+            ),
         )
         self.__function_account = (
             (_("使用 accounts_urls 参数的账号链接(推荐)"), self.account_detail_batch),
@@ -239,6 +246,10 @@ class TikTok:
         self.__function_detail_tiktok_unofficial = (
             (_("手动输入待采集的作品链接"), self.__detail_inquire_tiktok_unofficial),
             (_("从文本文档读取待采集的作品链接"), self.__detail_txt_tiktok_unofficial),
+        )
+        self.__function_upload_video_tiktok = (
+            (_("手动输入待发布的作品链接"), self.__upload_video_inquire_tiktok),
+            (_("从文本读取待发布的作品链接"), self.__upload_video_txt_tiktok),
         )
         self.__function_comment = (
             (_("手动输入待采集的作品链接"), self.__comment_inquire),
@@ -902,6 +913,16 @@ class TikTok:
         )
         self.logger.info(_("已退出批量下载视频原画(TikTok)模式"))
 
+    async def upload_video_tiktok(
+        self,
+        select="",
+    ):
+        await self.__detail_secondary_menu(
+            self.__function_upload_video_tiktok,
+            select or safe_pop(self.run_command),
+        )
+        self.logger.info(_("已退出批量发布视频作品(TikTok)模式"))
+
     async def __detail_secondary_menu(self, menu, select="", *args, **kwargs):
         root, params, logger = self.record.run(self.parameter)
         async with logger(root, console=self.console, **params) as record:
@@ -963,7 +984,25 @@ class TikTok:
                 _("共提取到 {count} 个作品，开始处理！").format(count=len(ids))
             )
             await self.handle_detail_unofficial(ids)
+    
+    async def __upload_video_inquire_tiktok(
+        self,
+        *args,
+        **kwargs,
+    ):
+        while video_path := self._inquire_input(_("作品")):
+            # single video
+            import json
+            with open('tiktok.com_raw_cookie.json', 'r', encoding='utf-8') as f:
+                cookies_list = json.load(f)
+                
+            import os
+            basename = os.path.basename(video_path)
+            filename, ext = os.path.splitext(basename)
+            upload_video(video_path, description=filename.split("-")[-1], cookies_list=cookies_list)
 
+            
+    
     async def __detail_txt(
         self,
         tiktok=False,
@@ -985,6 +1024,24 @@ class TikTok:
         await self.__detail_txt(
             tiktok=tiktok,
         )
+    async def __upload_video_txt_tiktok(
+        self,
+        tiktok=True,
+    ):
+        # Multiple Videos
+        videos = [
+            {
+                'path': 'video.mp4',
+                'description': 'this is my description'
+            },
+            {
+                'path': 'video2.mp4',
+                'description': 'this is also my description'
+            }
+        ]
+
+        auth = AuthBackend(cookies='cookies.txt')
+        upload_videos(videos=videos, auth=auth)
 
     async def __detail_txt_tiktok_unofficial(
         self,

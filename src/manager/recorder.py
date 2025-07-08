@@ -127,10 +127,10 @@ class DownloadRecorder:
         return (
             await self.database.has_download_data(id_) if self.switch and id_ else False
         )
-
-    async def update_id(self, id_: str):
+    # publish_time:作品发布时间
+    async def update_id(self, id_: str, publish_time: str, uid: str, mark: str, digg_count: int, comment_count: int, collect_count: int, share_count: int, play_count: int, path: str):
         if self.switch and id_:
-            await self.database.write_download_data(id_)
+            await self.database.write_download_data(id_, publish_time, uid, mark, digg_count, comment_count, collect_count, share_count, play_count, path)  
 
     async def delete_id(self, id_: str) -> None:
         if self.switch and id_:

@@ -35,27 +35,56 @@ class Database:
             );"""
         )
         await self.database.execute(
-            "CREATE TABLE IF NOT EXISTS download_data (ID TEXT PRIMARY KEY);"
+            """CREATE TABLE IF NOT EXISTS download_data (
+            ID TEXT PRIMARY KEY, 
+            PUBLISH_TIME TEXT, 
+            UID TEXT, 
+            MARK TEXT, 
+            DIGG_COUNT INTEGER, 
+            COMMENT_COUNT INTEGER, 
+            COLLECT_COUNT INTEGER, 
+            SHARE_COUNT INTEGER, 
+            PLAY_COUNT INTEGER, 
+            PATH TEXT);"""
         )
-        await self.database.execute("""CREATE TABLE IF NOT EXISTS mapping_data (
+        await self.database.execute(
+            """CREATE TABLE IF NOT EXISTS mapping_data (
         ID TEXT PRIMARY KEY,
         NAME TEXT NOT NULL,
         MARK TEXT NOT NULL
-        );""")
-        await self.database.execute("""CREATE TABLE IF NOT EXISTS option_data (
+        );"""
+        )
+        await self.database.execute(
+            """CREATE TABLE IF NOT EXISTS option_data (
         NAME TEXT PRIMARY KEY,
         VALUE TEXT NOT NULL
-        );""")
+        );"""
+        )
+        await self.database.execute(
+            """CREATE TABLE IF NOT EXISTS upload_data (
+            ACCOUNT_UID TEXT,
+            ACCOUNT_MARK TEXT,   
+            VIDEO_ID TEXT,
+            FROM_ACCOUNT_UID TEXT,
+            FROM_ACCOUNT_MARK TEXT,
+            UPLOAD_TIME TEXT,
+            PRIMARY KEY (ACCOUNT_UID,ACCOUNT_MARK,VIDEO_ID)
+            );"""
+        )
 
     async def __write_default_config(self):
-        await self.database.execute("""INSERT OR IGNORE INTO config_data (NAME, VALUE)
+        await self.database.execute(
+            """INSERT OR IGNORE INTO config_data (NAME, VALUE)
                             VALUES ('Record', 1),
                             ('Logger', 0),
-                            ('Disclaimer', 0);""")
+                            ('Disclaimer', 0);"""
+        )
 
     async def __write_default_option(self):
-        await self.database.execute("""INSERT OR IGNORE INTO option_data (NAME, VALUE)
-                            VALUES ('Language', 'zh_CN');""")
+        await self.database.execute(
+            """INSERT OR IGNORE INTO option_data (NAME, VALUE)
+                            VALUES ('Language', 'zh_CN');"""
+        )
 
     async def read_config_data(self):
         await self.cursor.execute("SELECT * FROM config_data")
@@ -102,9 +131,58 @@ class Database:
         await self.cursor.execute("SELECT ID FROM download_data WHERE ID=?", (id_,))
         return bool(await self.cursor.fetchone())
 
-    async def write_download_data(self, id_: str):
+    async def read_download_data(
+        self,
+        id_: str = None,
+        uid: str = None,
+        mark: str = None,
+        publish_time: str = None,
+    ):
+        sql = "SELECT * FROM download_data WHERE 1=1 "
+        args = ()
+        if id_:
+            sql += "AND ID=? "
+            args += (id,)
+        if uid:
+            sql += "AND UID=? "
+            args += (uid,)
+        if mark:
+            sql += "AND MARK=? "
+            args += (mark,)
+        if publish_time:
+            sql += "AND date(PUBLISH_TIME)>=date(?) "
+            args += (publish_time,)
+        sql += "ORDER BY DIGG_COUNT DESC"
+        await self.cursor.execute(sql, args)
+        return await self.cursor.fetchall()
+
+    async def write_download_data(
+        self,
+        id_: str,
+        publish_time: str,
+        uid: str,
+        mark: str,
+        digg_count: int,
+        comment_count: int,
+        collect_count: int,
+        share_count: int,
+        play_count: int,
+        path: str,
+    ):
         await self.database.execute(
-            "INSERT OR IGNORE INTO download_data (ID) VALUES (?);", (id_,)
+            "INSERT OR IGNORE INTO download_data (ID, PUBLISH_TIME, UID, MARK, DIGG_COUNT, COMMENT_COUNT, COLLECT_COUNT, SHARE_COUNT, PLAY_COUNT, PATH) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+            (
+                id_,
+                publish_time,
+                uid,
+                mark,
+                digg_count,
+                comment_count,
+                collect_count,
+                share_count,
+                play_count,
+                path,
+            ),
         )
         await self.database.commit()
 
@@ -122,6 +200,33 @@ class Database:
     async def delete_all_download_data(self):
         await self.database.execute("DELETE FROM download_data")
         await self.database.commit()
+
+    async def write_upload_data(
+        self,
+        account_uid: str,
+        account_mark: str,
+        video_id: str,
+        from_account_uid: str,
+        from_mark: str,
+    ):
+        await self.database.execute(
+            "INSERT OR IGNORE INTO upload_data (ACCOUNT_UID, ACCOUNT_MARK, VIDEO_ID, FROM_ACCOUNT_UID, FROM_ACCOUNT_MARK, UPLOAD_TIME) VALUES (?, ?, ?, ?, ?, datetime('now'));",
+            (
+                account_uid,
+                account_mark,
+                video_id,
+                from_account_uid,
+                from_mark,
+            ),
+        )
+        await self.database.commit()
+
+    async def has_upload_data(self, account_uid: str, id_: str) -> bool:
+        await self.cursor.execute(
+            "SELECT VIDEO_ID FROM upload_data WHERE ACCOUNT_UID=? AND VIDEO_ID=?",
+            (account_uid, id_),
+        )
+        return bool(await self.cursor.fetchone())
 
     async def __aenter__(self):
         await self.__connect_database()
