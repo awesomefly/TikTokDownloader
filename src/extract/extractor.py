@@ -1156,9 +1156,11 @@ class Extractor:
     ):
         data = self.safe_extract(data, "data")
         live_data = {
-            "create_time": datetime.fromtimestamp(t)
-            if (t := self.safe_extract(data, "create_time"))
-            else "未知",
+            "create_time": (
+                datetime.fromtimestamp(t)
+                if (t := self.safe_extract(data, "create_time"))
+                else "未知"
+            ),
             "id_str": self.safe_extract(data, "id_str"),
             "like_count": self.safe_extract(data, "like_count"),
             "nickname": self.safe_extract(data, "owner.nickname"),
@@ -1461,6 +1463,11 @@ class Extractor:
         earliest: "date" = ...,
         latest: "date" = ...,
     ) -> list[dict]:
+        self.log.info(
+            _("筛选作品，过滤条件：{earliest} <= 发布时间 <= {latest}").format(
+                earliest=earliest, latest=latest
+            )
+        )
         result = []
         for item in data:
             if not (create_time := item.get(key, 0)):

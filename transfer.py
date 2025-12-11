@@ -10,6 +10,54 @@ from src.application.main_terminal import TikTok
 from src.tools import to_upload_cookie_list
 from src.uploader.upload import upload_video, upload_videos
 
+import argparse
+import datetime
+import pytz
+
+
+def get_next_sunday():
+    """获取下一个周日的 datetime 对象，时间设置为上午10点，分钟为5的倍数"""
+    now = datetime.datetime.now(pytz.UTC)
+    today = now.date()
+
+    # 计算到下一个周日需要的天数 (周日是 weekday() == 6)
+    days_ahead = 6 - today.weekday()
+
+    # 如果今天就是周日，我们需要下周的周日
+    if days_ahead <= 0:
+        days_ahead += 7
+
+    next_sunday = today + datetime.timedelta(days=days_ahead)
+
+    # 设置时间为上午4点，分钟为0（5的倍数），此时美东 0 点
+    next_sunday_datetime = datetime.datetime.combine(next_sunday, datetime.time(4, 0))
+
+    # 添加UTC时区信息
+    return pytz.UTC.localize(next_sunday_datetime)
+
+
+def get_next_saturday():
+    """获取下一个周六的 datetime 对象，时间设置为上午10点，分钟为5的倍数"""
+    now = datetime.datetime.now(pytz.UTC)
+    today = now.date()
+
+    # 计算到下一个周六需要的天数 (周六是 weekday() == 5)
+    days_ahead = 5 - today.weekday()
+
+    # 如果今天就是周六，我们需要下周的周六
+    if days_ahead <= 0:
+        days_ahead += 7
+
+    next_saturday = today + datetime.timedelta(days=days_ahead)
+
+    # 设置时间为上午10点，分钟为0（5的倍数）
+    next_saturday_datetime = datetime.datetime.combine(
+        next_saturday, datetime.time(10, 0)
+    )
+
+    # 添加UTC时区信息
+    return pytz.UTC.localize(next_saturday_datetime)
+
 
 async def do_transfer(
     downloader: TikTokDownloader,
@@ -19,6 +67,7 @@ async def do_transfer(
     video_path: str,
     dest_account_uid: str,
     dest_account_mark: str,
+    schedule_time: datetime.datetime = None,
 ):
     # 上传视频到指定的抖音账户
     downloader.console.print(
@@ -45,6 +94,7 @@ async def do_transfer(
             video_path,
             description=filename.split("-")[-1],
             cookies_list=cookies_list,
+            schedule=schedule_time,
         )
         if len(result) == 0:
             # 上传成功
@@ -55,7 +105,7 @@ async def do_transfer(
         return False
 
 
-async def transfer():
+async def transfer(args):
     async with TikTokDownloader() as downloader:
         try:
             await downloader.init()
@@ -70,6 +120,13 @@ async def transfer():
 
             # 下载更新tiktok账户的视频
             # await tk_instance.account_detail_batch_tiktok()
+
+            # 根据命令行参数确定调度时间
+            schedule_time = None
+            if args.schedule == 'saturday':
+                schedule_time = get_next_saturday()
+            elif args.schedule == 'sunday':
+                schedule_time = get_next_sunday()
 
             transfer_configs = downloader.parameter.video_transfer
             for transfer_config in transfer_configs:
@@ -92,6 +149,7 @@ async def transfer():
                             recorder["PATH"],
                             transfer_config.to_account_uid,  # 目标抖音账户UID，暂时实际值为uid_tt
                             transfer_config.to_account_mark,
+                            schedule_time,
                         )
                         if ret:
                             num -= 1
@@ -108,5 +166,24 @@ async def transfer():
             return
 
 
+def parse_args():
+    """解析命令行参数"""
+    parser = argparse.ArgumentParser(description='TikTok视频下载和转移工具')
+
+    # 添加参数
+    parser.add_argument(
+        '--schedule',
+        choices=['none', 'saturday', 'sunday'],
+        default='none',
+        help='设置上传调度时间: none(立即上传), saturday(下一个周六), sunday(下一个周日)',
+    )
+
+    parser.add_argument('--config', type=str, help='指定配置文件路径')
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    run(transfer())
+    # 解析命令行参数
+    args = parse_args()
+
+    run(transfer(args))

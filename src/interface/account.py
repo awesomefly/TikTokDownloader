@@ -234,7 +234,9 @@ class Account(API):
                 _("作品{tip}发布日期参数 {date} 类型错误").format(tip=tip, date=value)
             )
         self.log.info(
-            _("作品{tip}发布日期: {latest_date}").format(tip=tip, latest_date=date_)
+            _("过滤条件：作品{tip}发布日期: {latest_date}").format(
+                tip=tip, latest_date=date_
+            )
         )
         return date_  # 返回 date 对象
 

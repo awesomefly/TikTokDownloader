@@ -9,10 +9,13 @@ upload_videos : Uploads multiple TikTok videos
 
 from os.path import abspath, exists
 from typing import List, Optional
+import os.path
 import time
 import pytz
 import datetime
 import threading
+import traceback
+
 
 from selenium.webdriver.common.by import By
 
@@ -201,7 +204,7 @@ def upload_videos(
                 elif (
                     int(schedule.utcoffset().total_seconds()) == 0
                 ):  # Equivalent to UTC
-                    schedule = timezone.localize(schedule)
+                    schedule = schedule.replace(tzinfo=timezone)
                 else:
                     print(
                         f"{schedule} is invalid, the schedule datetime must be naive or aware with UTC timezone, skipping"
@@ -284,6 +287,14 @@ def complete_upload_form(
     # Wait for the upload to complete before proceeding
     upload_complete_event.wait()
 
+    WebDriverWait(driver, config["uploading_wait"]).until(
+        EC.presence_of_element_located(
+            (By.XPATH, config["selectors"]["upload"]["upload_video_complete"])
+        )
+    )
+
+    time.sleep(1)  # 等待默认封面生成后，再设置自定义封面
+    _set_cover(driver, path.replace(".mp4", ".jpeg"))
     if not skip_split_window:
         _remove_split_window(driver)
     _set_description(driver, description)
@@ -337,6 +348,48 @@ def _change_to_upload_iframe(driver) -> None:
     )
     iframe = WebDriverWait(driver, config["explicit_wait"]).until(iframe_selector)
     driver.switch_to.frame(iframe)
+
+
+def _set_cover(driver, path: str) -> None:
+    logger.debug(green("Setting cover"))
+    if path is None or not os.path.exists(path):
+        # if no cover is provided, filename
+        return
+
+    WebDriverWait(driver, config["implicit_wait"]).until(
+        EC.presence_of_element_located(
+            (By.XPATH, config["selectors"]["upload"]["cover"])
+        )
+    )
+
+    cover = driver.find_element(By.XPATH, config["selectors"]["upload"]["cover"])
+    cover.click()
+
+    # 等待浮窗可见
+    WebDriverWait(driver, config["implicit_wait"]).until(
+        EC.visibility_of_element_located(
+            (By.XPATH, config["selectors"]["upload"]["upload_cover_tab"])
+        )
+    )
+    upload_cover_tab = driver.find_element(
+        By.XPATH, config["selectors"]["upload"]["upload_cover_tab"]
+    )
+    upload_cover_tab.click()
+
+    upload_cover_input = driver.find_element(
+        By.XPATH, config["selectors"]["upload"]["upload_cover_input"]
+    )
+    upload_cover_input.send_keys(path)
+
+    WebDriverWait(driver, config["uploading_wait"]).until(
+        EC.element_to_be_clickable(
+            (By.XPATH, config["selectors"]["upload"]["upload_cover_commit"])
+        )
+    )
+    upload_cover_commit = driver.find_element(
+        By.XPATH, config["selectors"]["upload"]["upload_cover_commit"]
+    )
+    upload_cover_commit.click()
 
 
 def _set_description(driver, description: str) -> None:
@@ -610,7 +663,9 @@ def _set_content_check(driver, content_check=False, copyright_check=False) -> No
         )
 
         if copyright_check ^ copyright_box.is_selected():
-            copyright_box.click()
+            # 按钮上有蒙层，直接点击会被遮挡，需要用js点击
+            driver.execute_script("arguments[0].click();", copyright_box)
+            # copyright_box.click()
         if content_check ^ content_box.is_selected():
             # 按钮上有蒙层，直接点击会被遮挡，需要用js点击
             driver.execute_script("arguments[0].click();", content_box)
@@ -648,6 +703,7 @@ def _set_schedule_video(driver, schedule: datetime.datetime) -> None:
         __date_picker(driver, month, day)
         __time_picker(driver, hour, minute)
     except Exception as e:
+        traceback.print_exc()
         msg = f"Failed to set schedule: {e}"
         logger.error(red(msg))
         raise FailedToUpload()
@@ -701,7 +757,8 @@ def __date_picker(driver, month: int, day: int) -> None:
 def __verify_date_picked_is_correct(driver, month: int, day: int):
     date_selected = driver.find_element(
         By.XPATH, config["selectors"]["schedule"]["date_picker"]
-    ).text
+    ).get_attribute("value")
+    logger.debug(f"Date selected: {date_selected}")
     date_selected_month = int(date_selected.split("-")[1])
     date_selected_day = int(date_selected.split("-")[2])
 
@@ -767,8 +824,9 @@ def __time_picker(driver, hour: int, minute: int) -> None:
 
 def __verify_time_picked_is_correct(driver, hour: int, minute: int):
     time_selected = driver.find_element(
-        By.XPATH, config["selectors"]["schedule"]["time_picker_text"]
-    ).text
+        By.XPATH, config["selectors"]["schedule"]["time_picker"]
+    ).get_attribute("value")
+    logger.debug(f"Time selected: {time_selected}")
     time_selected_hour = int(time_selected.split(":")[0])
     time_selected_minute = int(time_selected.split(":")[1])
 

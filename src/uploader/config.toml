@@ -44,10 +44,15 @@ user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 	
 	split_window = "//button[./div[text()='Not now']]"
 	upload_video = "//input[@type='file']"
+	upload_video_complete = "//span[contains(text(), 'Uploaded')]"
 	upload_finished = "//div[contains(@class, 'btn-cancel')]"
  	upload_confirmation = "//div[@title]"
  	process_confirmation = "//div[contains(@class, 'resolution-label-text')]"
 	description = "//div[@contenteditable='true']"
+	cover = "//div[text()='Edit cover']"
+	upload_cover_tab = "//div[contains(text(), 'Upload cover')]"
+	upload_cover_input = "//div[div[text()='Drag and drop a file here']]/preceding-sibling::input"
+	upload_cover_commit = "//div[contains(@class, 'cover-edit-panel') and not(contains(@class, 'hide-panel'))]//button[.//div[text()='Confirm']]"
 
 	visibility = "//div[@class='tiktok-select-selector']"
 	options = ["Public", "Friends", "Private"]
@@ -69,15 +74,15 @@ user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 
 
 	[selectors.schedule]
-	switch = "//*[@id='tux-1']"
+	switch =  "//label[.//span[text()='Schedule' or text()='预约发布']]"
 
-	date_picker = "//div[contains(@class, 'date-picker-input')]"
+	date_picker = "(//input[contains(@class, 'TUXTextInputCore-input')])[2]"
 	calendar = "//div[contains(@class, 'calendar-wrapper')]"
 	calendar_month = "//span[contains(@class, 'month-title')]"
-	calendar_valid_days = "//div[@class='jsx-4172176419 days-wrapper']//span[contains(@class, 'day') and contains(@class, 'valid')]"
+	calendar_valid_days = "//div[contains(@class,'days-wrapper')]//span[contains(@class, 'day') and contains(@class, 'valid')]"
 	calendar_arrows = "//span[contains(@class, 'arrow')]"  # first last, second next
 
-	time_picker = "//div[contains(@class, 'time-picker-input')]"
+	time_picker = "(//input[contains(@class, 'TUXTextInputCore-input')])[1]"
 	time_picker_text = "//div[contains(@class, 'time-picker-input')]/*[1]"
 	time_picker_container = "//div[@class='tiktok-timepicker-time-picker-container']"
 	timepicker_hours = "//span[contains(@class, 'tiktok-timepicker-left')]"
@@ -88,6 +93,6 @@ user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 		button = "div.button-wrapper"
 
 	[selectors.check]
-	copyright = "//div[span[text()='Run a copyright check']]/following-sibling::div//input"
+	copyright = "//div[span[text()='Music copyright check']]/following-sibling::div//input"
 	content = "//div[span[text()='Content check lite']]//input"
 

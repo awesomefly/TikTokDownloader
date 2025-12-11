@@ -277,7 +277,7 @@ class Downloader:
         )
         tasks = []
         for item in data:
-            #self.log.info(_("作品:{item} 提取作品 ID 失败").format(item=item))
+            # self.log.info(_("作品:{item} 提取作品 ID 失败").format(item=item))
             name = self.generate_detail_name(item)  # 生成作品文件名称
             temp_root, actual_root = self.deal_folder_path(
                 root,
@@ -415,9 +415,9 @@ class Downloader:
                     f"【{type_}】{name}_{index}",
                     id_,
                     suffix,
-                    item['create_time'],
-                    item['uid'],
-                    item['mark'],
+                    item["create_time"],
+                    item["uid"],
+                    item["mark"],
                 )
             )
 
@@ -462,14 +462,14 @@ class Downloader:
                 f"【{type_}】{name}",
                 id_,
                 suffix,
-                item['create_time'],
-                str(item['uid']),
-                item['mark'],
-                item['digg_count'],
-                item['comment_count'],
-                item['collect_count'],
-                item['share_count'],
-                item['play_count'],
+                item["create_time"],
+                str(item["uid"]),
+                item["mark"],
+                item["digg_count"],
+                item["comment_count"],
+                item["collect_count"],
+                item["share_count"],
+                item["play_count"],
             )
         )
 
@@ -503,9 +503,9 @@ class Downloader:
                     ),
                     id_,
                     suffix,
-                    item['create_time'],
-                    str(item['uid']),
-                    item['mark'],
+                    item["create_time"],
+                    str(item["uid"]),
+                    item["mark"],
                 )
             )
 
@@ -538,9 +538,9 @@ class Downloader:
                     f"【封面】{name}",
                     id_,
                     static_suffix,
-                    item['create_time'],
-                    str(item['uid']),
-                    item['mark'],
+                    item["create_time"],
+                    str(item["uid"]),
+                    item["mark"],
                 )
             )
         if all(
@@ -560,9 +560,9 @@ class Downloader:
                     f"【动图】{name}",
                     id_,
                     dynamic_suffix,
-                    item['create_time'],
-                    str(item['uid']),
-                    item['mark'],
+                    item["create_time"],
+                    str(item["uid"]),
+                    item["mark"],
                 )
             )
 
@@ -587,13 +587,13 @@ class Downloader:
         create_time: str,
         uid: str,
         mark: str,
-        digg_count: int,
-        comment_count: int,
-        collect_count: int,
-        share_count: int,
-        play_count: int,
-        count: SimpleNamespace,
-        progress: Progress,
+        digg_count: int = 0,
+        comment_count: int = 0,
+        collect_count: int = 0,
+        share_count: int = 0,
+        play_count: int = 0,
+        count: SimpleNamespace = None,
+        progress: Progress = None,
         headers: dict = None,
         tiktok=False,
         unknown_size=False,
@@ -642,7 +642,7 @@ class Downloader:
                         unknown_size,
                         show,
                     ):
-                        case 1: # 正常下载
+                        case 1:  # 正常下载
                             return await self.download_file(
                                 temp,
                                 actual.with_suffix(
@@ -664,9 +664,9 @@ class Downloader:
                                 count,
                                 progress,
                             )
-                        case 0: # 已下载跳过
+                        case 0:  # 已下载跳过
                             return True
-                        case -1: # 下载失败
+                        case -1:  # 下载失败
                             return False
                         case _:
                             raise DownloaderError
@@ -706,16 +706,16 @@ class Downloader:
         create_time: str,
         uid: str,
         mark: str,
-        digg_count: int,
-        comment_count: int,
-        collect_count: int,
-        share_count: int,
-        play_count: int,
-        response,
-        content: int,
-        position: int,
-        count: SimpleNamespace,
-        progress: Progress,
+        digg_count: int = 0,
+        comment_count: int = 0,
+        collect_count: int = 0,
+        share_count: int = 0,
+        play_count: int = 0,
+        response=None,
+        content: int = 0,
+        position: int = 0,
+        count: SimpleNamespace = None,
+        progress: Progress = None,
     ) -> bool:
         task_id = progress.add_task(
             beautify_string(show, self.truncate),
@@ -742,7 +742,18 @@ class Downloader:
         self.save_file(cache, actual)
         self.log.info(_("{show} 文件下载成功").format(show=show))
         self.log.info(f"文件路径 {actual.resolve()}", False)
-        await self.recorder.update_id(id_, create_time, uid, mark, digg_count, comment_count, collect_count, share_count, play_count, actual.resolve().as_posix())
+        await self.recorder.update_id(
+            id_,
+            create_time,
+            uid,
+            mark,
+            digg_count,
+            comment_count,
+            collect_count,
+            share_count,
+            play_count,
+            actual.resolve().as_posix(),
+        )
         self.add_count(show, id_, count)
         return True
 
